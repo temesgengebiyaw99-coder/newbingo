@@ -2502,7 +2502,7 @@ function showWelcomeModal() {
     }
 }
 function connectToServer() {
-    socket = io({ path: '/to/socket.io', transports: ['websocket', 'polling'] });
+socket = io('https://newbingo-x91w.onrender.com');
 
     socket.on('connect', () => {
         document.getElementById('connectOverlay').classList.add('hidden');
