@@ -2595,16 +2595,28 @@ socket = io('https://newbingo-x91w.onrender.com');
     renderCardsGrid();
 });
 
-    socket.on('card_selected', ({ cardIndex, myWallet: w }) => {
-        myCardIndex = cardIndex;
-        if (!hasPaidThisRound) {
-            hasPaidThisRound = true;
-            myWallet = w;
-            const wb = document.getElementById('walletBalance'); if (wb) wb.textContent = `${myWallet} ETB`;
-            const db = document.getElementById('dashBalance');   if (db) db.textContent = `${myWallet} ETB`;
-        }
-        renderCardsGrid();
-    });
+    // --- card_selected listener (replace the existing socket.on('card_selected', ...) block) ---
+socket.on('card_selected', ({ cardIndex, myWallet: w, card }) => {
+    myCardIndex = cardIndex;
+
+    // Server is now the source of truth for this card's numbers — store it
+    // directly into allCards so every downstream render (preview, in-game
+    // card, claim checks) uses the exact same data, with no reliance on
+    // allCards having arrived/matched beforehand.
+    if (card) {
+        allCards[cardIndex] = card;
+        showInlinePreview(cardIndex);
+        showChooserTopPreview(cardIndex);
+    }
+
+    if (!hasPaidThisRound) {
+        hasPaidThisRound = true;
+        myWallet = w;
+        const wb = document.getElementById('walletBalance'); if (wb) wb.textContent = `${myWallet} ETB`;
+        const db = document.getElementById('dashBalance');   if (db) db.textContent = `${myWallet} ETB`;
+    }
+    renderCardsGrid();
+});
 
  socket.on('game_start', ({ playerCount, pot, derash }) => {
     gamePhase = 'playing';
@@ -3021,16 +3033,15 @@ if (myWallet !== null && myWallet < 10) {
 }
 
     myCardIndex = index;
-    showInlinePreview(index);
-    showChooserTopPreview(index);
-    document.getElementById('cardsSection').classList.add('card-selected');
-    document.getElementById('previewSection').classList.add('active');
-    document.getElementById('previewSectionTitle').textContent = `Card #${index + 1}`;
-    document.getElementById('previewCardId').textContent       = `Card #${index + 1}`;
+showInlinePreview(index);
+showChooserTopPreview(index);
+document.getElementById('cardsSection').classList.add('hidden');
+document.getElementById('previewSection').classList.remove('hidden');
+document.getElementById('previewSectionTitle').textContent = `Card #${index + 1}`;
+document.getElementById('previewCardId').textContent = `Card #${index + 1}`;
 
-    socket.emit('select_card', { cardIndex: index });
-    renderCardsGrid();
-}
+socket.emit('select_card', { cardIndex: index });
+renderCardsGrid();
 
 
 function showInlinePreview(index) {
